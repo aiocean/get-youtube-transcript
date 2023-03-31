@@ -2,5 +2,5 @@ version: '3'
 tasks:
   deploy:
     cmds:
-      - flyctl deploy --access-token {{.FLY_API_TOKEN}} --remote-only
+      - flyctl deploy --access-token {{.FLY_API_TOKEN}} --remote-only --now
     silent: true

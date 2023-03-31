@@ -39,13 +39,13 @@ func (t *Transcript) String() string {
 }
 
 type Transcript struct {
-	VideoId  string
-	Segments []Segment
+	VideoId  string    `json:"videoID"`
+	Segments []Segment `json:"segments"`
 }
 
 type Segment struct {
-	Time string
-	Text string
+	Time string `json:"time"`
+	Text string `json:"text"`
 }
 
 func GetTranscript(videoID string) (*Transcript, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/aiocean/get-youtube-transcript/pkg/youtube"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -38,17 +39,35 @@ func main() {
 		port = "8080"
 	}
 
+	app.Get("/", homeHandler)
 	app.Get("/transcripts/:id", getTranscriptHandler)
 
 	log.Println("listening on", port)
 	log.Fatal(app.Listen(":" + port))
 }
 
+var transcriptCache = make(map[string]*youtube.Transcript)
+
 func getTranscriptHandler(c *fiber.Ctx) error {
 	videoID := c.Params("id")
-	c.Response().Header.Add("Cache-Time", "6000")
 
-	return c.JSON(fiber.Map{
-		"videoID": videoID,
-	})
+	if transcript, ok := transcriptCache[videoID]; ok {
+		c.Response().Header.Add("Cache-Time", "6000")
+		return c.JSON(transcript)
+	}
+
+	transcript, err := youtube.GetTranscript(videoID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	transcriptCache[videoID] = transcript
+
+	c.Response().Header.Add("Cache-Time", "6000")
+	return c.JSON(transcript)
+}
+
+func homeHandler(c *fiber.Ctx) error {
+	return c.Redirect("https://github.com/aiocean/get-youtube-transcript")
 }
