@@ -54,7 +54,7 @@ fly login
 2. Create a new Fly.io app:
 
 ```bash
-flyctl init
+flyctl launch
 ```
 
 3. Deploy the app:

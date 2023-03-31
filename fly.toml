@@ -1,6 +1,6 @@
-# fly.toml file generated for fetch-favicon on 2023-03-30T19:17:42+07:00
+# fly.toml file generated for get-youtube-transcript on 2023-03-31T22:14:05+07:00
 
-app = "fetch-favicon"
+app = "get-youtube-transcript"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
