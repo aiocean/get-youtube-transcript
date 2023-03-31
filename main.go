@@ -42,8 +42,9 @@ func main() {
 	app.Get("/", homeHandler)
 	app.Get("/transcripts/:id", getTranscriptHandler)
 
-	log.Println("listening on", port)
-	log.Fatal(app.Listen(":" + port))
+	if err := app.Listen(":" + port); err != nil {
+		log.Fatal(err)
+	}
 }
 
 var transcriptCache = make(map[string]*youtube.Transcript)
@@ -52,7 +53,6 @@ func getTranscriptHandler(c *fiber.Ctx) error {
 	videoID := c.Params("id")
 
 	if transcript, ok := transcriptCache[videoID]; ok {
-		c.Response().Header.Add("Cache-Time", "6000")
 		return c.JSON(transcript)
 	}
 
@@ -63,8 +63,6 @@ func getTranscriptHandler(c *fiber.Ctx) error {
 		})
 	}
 	transcriptCache[videoID] = transcript
-
-	c.Response().Header.Add("Cache-Time", "6000")
 	return c.JSON(transcript)
 }
 
