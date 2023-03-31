@@ -4,3 +4,7 @@ tasks:
     cmds:
       - flyctl deploy --access-token {{.FLY_API_TOKEN}} --remote-only --now
     silent: true
+  run:
+    cmds:
+      - go run ./...
+    silent: true

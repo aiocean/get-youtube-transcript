@@ -62,6 +62,13 @@ func getTranscriptHandler(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	if len(transcript.Segments) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "No transcript found",
+		})
+	}
+
 	transcriptCache[videoID] = transcript
 	return c.JSON(transcript)
 }
