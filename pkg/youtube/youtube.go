@@ -44,8 +44,9 @@ type Transcript struct {
 }
 
 type Segment struct {
-	Time string `json:"time"`
-	Text string `json:"text"`
+	Time    string `json:"time"`
+	Text    string `json:"text"`
+	StartMs int    `json:"startMs"`
 }
 
 func GetTranscript(videoID string) (*Transcript, error) {
@@ -94,7 +95,6 @@ func GetTranscript(videoID string) (*Transcript, error) {
 		for _, seg := range segment {
 			text := ""
 			for _, run := range seg.TranscriptCueGroupRenderer.Cues {
-
 				text += " " + strings.TrimSpace(run.TranscriptCueRenderer.Cue.SimpleText)
 			}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/utils"
+	tokenizer "github.com/samber/go-gpt-3-encoder"
 	"log"
 	"os"
 	"strconv"
@@ -29,7 +30,7 @@ func main() {
 			return time.Second * time.Duration(newCacheTime)
 		},
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return utils.CopyString(c.Path())
+			return utils.CopyString(c.Params("id"))
 		}})
 
 	app.Use(cacheModule)
@@ -47,14 +48,8 @@ func main() {
 	}
 }
 
-var transcriptCache = make(map[string]*youtube.Transcript)
-
 func getTranscriptHandler(c *fiber.Ctx) error {
 	videoID := c.Params("id")
-
-	if transcript, ok := transcriptCache[videoID]; ok {
-		return c.JSON(transcript)
-	}
 
 	transcript, err := youtube.GetTranscript(videoID)
 	if err != nil {
@@ -69,8 +64,66 @@ func getTranscriptHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	transcriptCache[videoID] = transcript
-	return c.JSON(transcript)
+	format := c.Query("format")
+	if format == "" || format == "json" {
+		return c.JSON(transcript)
+	}
+
+	includeTime := c.Query("include-time", "false") == "true"
+
+	var plainText string
+	for _, segment := range transcript.Segments {
+		if includeTime {
+			plainText += "[" + segment.Time + "]"
+		}
+		plainText += segment.Text + " "
+	}
+
+	chunkSize := c.QueryInt("chunk-size", 0)
+	if chunkSize == 0 {
+		return c.JSON([]string{plainText})
+	}
+
+	var chunks []string
+
+	encoder, err := getTokenEncoder()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	encodedText, err := encoder.Encode(plainText)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	for i := 0; i < len(encodedText); i += chunkSize {
+		end := i + chunkSize
+		if end > len(encodedText) {
+			end = len(encodedText)
+		}
+
+		chunks = append(chunks, encoder.Decode(encodedText[i:end]))
+	}
+
+	return c.JSON(chunks)
+}
+
+var cacheTokenEncoder *tokenizer.Encoder
+
+func getTokenEncoder() (*tokenizer.Encoder, error) {
+	if cacheTokenEncoder == nil {
+		var err error
+		cacheTokenEncoder, err = tokenizer.NewEncoder()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return cacheTokenEncoder, nil
 }
 
 func homeHandler(c *fiber.Ctx) error {
